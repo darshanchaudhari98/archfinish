@@ -59,6 +59,7 @@ export default function DrawingUploader({ projectId }: Props) {
               projectId,
               userId: user!.id,
               fileName: file.name,
+              mimeType: file.type,
             },
           }
         );

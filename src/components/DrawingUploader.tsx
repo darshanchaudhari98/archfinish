@@ -59,6 +59,7 @@ export default function DrawingUploader({ projectId }: Props) {
               projectId,
               userId: user!.id,
               fileName: file.name,
+              mimeType: file.type,
             },
           }
         );
@@ -104,7 +105,10 @@ export default function DrawingUploader({ projectId }: Props) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/*": [".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"] },
+    accept: {
+      "image/*": [".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"],
+      "application/pdf": [".pdf"],
+    },
     maxFiles: 1,
     disabled: uploading,
   });
@@ -149,7 +153,7 @@ export default function DrawingUploader({ projectId }: Props) {
               {isDragActive ? "Drop your drawing here" : "Drag & drop an architectural drawing"}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              PNG, JPG, WEBP up to 20MB • AI will extract room data automatically
+              PNG, JPG, WEBP, PDF up to 20MB • AI will extract room data automatically
             </p>
           </motion.div>
         )}

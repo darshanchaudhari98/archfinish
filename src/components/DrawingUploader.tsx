@@ -104,7 +104,10 @@ export default function DrawingUploader({ projectId }: Props) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/*": [".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"] },
+    accept: {
+      "image/*": [".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"],
+      "application/pdf": [".pdf"],
+    },
     maxFiles: 1,
     disabled: uploading,
   });

@@ -56,7 +56,7 @@ Return a JSON object with this exact structure:
             content: [
               {
                 type: "image_url",
-                image_url: { url: imageBase64 },
+                image_url: { url: imageBase64, ...(mimeType === "application/pdf" ? { detail: "auto" } : {}) },
               },
               {
                 type: "text",

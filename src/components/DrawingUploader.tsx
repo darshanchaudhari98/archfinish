@@ -152,7 +152,7 @@ export default function DrawingUploader({ projectId }: Props) {
               {isDragActive ? "Drop your drawing here" : "Drag & drop an architectural drawing"}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              PNG, JPG, WEBP up to 20MB • AI will extract room data automatically
+              PNG, JPG, WEBP, PDF up to 20MB • AI will extract room data automatically
             </p>
           </motion.div>
         )}

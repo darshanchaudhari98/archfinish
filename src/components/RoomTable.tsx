@@ -208,7 +208,7 @@ export default function RoomTable({ rooms, projectId }: Props) {
                   <div className="flex gap-1">
                     {editingId === room.id ? (
                       <>
-                        <Button variant="ghost" size="icon" onClick={saveEdit} className="h-6 w-6 text-green-600">
+                        <Button variant="ghost" size="icon" onClick={saveEdit} className="h-6 w-6 text-primary">
                           <Check className="h-3 w-3" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={cancelEdit} className="h-6 w-6">

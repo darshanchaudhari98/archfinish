@@ -113,20 +113,36 @@ export type Database = {
         Row: {
           area: number | null
           area_unit: string | null
+          ceiling_code: string | null
           ceiling_finish: string | null
           ceiling_height: number | null
+          ceiling_make: string | null
+          ceiling_material_2: string | null
+          ceiling_rate: string | null
+          ceiling_size: string | null
           created_at: string
           dado: string | null
           dimensions: Json | null
           drawing_id: string
           floor_finish: string | null
+          floor_level: string | null
+          flooring_code: string | null
+          flooring_finish: string | null
+          flooring_make: string | null
+          flooring_rate: string | null
+          flooring_size: string | null
           id: string
           name: string
           notes: string | null
           paint_color: string | null
           project_id: string
+          remark: string | null
           room_type: string | null
           skirting: string | null
+          skirting_code: string | null
+          skirting_make: string | null
+          skirting_rate: string | null
+          space_tag: string | null
           updated_at: string
           user_id: string
           wall_finish: string | null
@@ -134,20 +150,36 @@ export type Database = {
         Insert: {
           area?: number | null
           area_unit?: string | null
+          ceiling_code?: string | null
           ceiling_finish?: string | null
           ceiling_height?: number | null
+          ceiling_make?: string | null
+          ceiling_material_2?: string | null
+          ceiling_rate?: string | null
+          ceiling_size?: string | null
           created_at?: string
           dado?: string | null
           dimensions?: Json | null
           drawing_id: string
           floor_finish?: string | null
+          floor_level?: string | null
+          flooring_code?: string | null
+          flooring_finish?: string | null
+          flooring_make?: string | null
+          flooring_rate?: string | null
+          flooring_size?: string | null
           id?: string
           name?: string
           notes?: string | null
           paint_color?: string | null
           project_id: string
+          remark?: string | null
           room_type?: string | null
           skirting?: string | null
+          skirting_code?: string | null
+          skirting_make?: string | null
+          skirting_rate?: string | null
+          space_tag?: string | null
           updated_at?: string
           user_id: string
           wall_finish?: string | null
@@ -155,20 +187,36 @@ export type Database = {
         Update: {
           area?: number | null
           area_unit?: string | null
+          ceiling_code?: string | null
           ceiling_finish?: string | null
           ceiling_height?: number | null
+          ceiling_make?: string | null
+          ceiling_material_2?: string | null
+          ceiling_rate?: string | null
+          ceiling_size?: string | null
           created_at?: string
           dado?: string | null
           dimensions?: Json | null
           drawing_id?: string
           floor_finish?: string | null
+          floor_level?: string | null
+          flooring_code?: string | null
+          flooring_finish?: string | null
+          flooring_make?: string | null
+          flooring_rate?: string | null
+          flooring_size?: string | null
           id?: string
           name?: string
           notes?: string | null
           paint_color?: string | null
           project_id?: string
+          remark?: string | null
           room_type?: string | null
           skirting?: string | null
+          skirting_code?: string | null
+          skirting_make?: string | null
+          skirting_rate?: string | null
+          space_tag?: string | null
           updated_at?: string
           user_id?: string
           wall_finish?: string | null

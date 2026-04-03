@@ -15,49 +15,61 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `You are an architectural drawing analyzer. Analyze the uploaded architectural floor plan and extract ALL rooms/spaces visible.
+    const systemPrompt = `You are an expert architectural drawing analyzer and interior design material consultant. Analyze the uploaded architectural floor plan and extract ALL rooms/spaces visible.
 
-For each room, provide these fields matching a professional Schedule of Finishes format:
+For each room you detect, you must:
+1. Identify the room/space from the drawing
+2. RECOMMEND appropriate finishing materials based on the room type, its function, and industry best practices
+3. Provide reasoning for each material recommendation
 
-- name: The space description (e.g. "Electrical Room", "Public Lift Lobby")
+For each room, provide these fields:
+
+- name: The space description (e.g. "Electrical Room", "Public Lift Lobby", "Master Bedroom")
 - floor_level: Which floor (e.g. "Basement 1", "Ground Floor", "First Floor")
-- space_tag: Room/space tag if visible
+- space_tag: Room/space tag if visible in the drawing
 - room_type: Category (bedroom, bathroom, kitchen, living, dining, hallway, utility, office, storage, balcony, garage, lobby, staircase, hub, ahu, general)
 
-FLOORING:
-- floor_finish: Flooring material (e.g. "Kota Stone", "Granite Stone", "Homogenous Vitrified Tiles", "Carpet Flooring", "LVT Flooring")
-- flooring_size: Tile/material size (e.g. "600 x 600", "800 x 1600")
-- flooring_finish: Surface finish (e.g. "AntiSkid", "Glossy", "Matte", "Honed", "Leather")
-- flooring_code: Material code number if visible
-- flooring_make: Manufacturer/brand if visible
-- flooring_rate: Basic rate if visible
+FLOORING (recommend appropriate material based on room type):
+- floor_finish: Recommended flooring material (e.g. "Kota Stone" for utility areas, "Homogenous Vitrified Tiles" for lobbies, "Carpet Flooring" for offices, "Anti-skid Ceramic Tiles" for bathrooms)
+- flooring_finish: Surface finish (e.g. "AntiSkid" for wet areas, "Glossy" for lobbies, "Matte" for offices, "Honed" for corridors)
+- flooring_code: Leave empty
+- flooring_make: Recommend a suitable brand/manufacturer if applicable
+- flooring_rate: Leave empty
+- NOTE: Do NOT fill flooring_size — leave it empty
 
-SKIRTING:
-- skirting: Skirting material (e.g. "Kota Stone", "Granite Stone", "Aluminium", "Coving")
-- skirting_code: Code number if visible
-- skirting_make: Manufacturer/brand if visible
-- skirting_rate: Basic rate if visible
+SKIRTING (recommend based on flooring material):
+- skirting: Recommended skirting material matching the floor (e.g. "Granite Stone" skirting for granite floors, "Aluminium" for modern offices)
+- skirting_code: Leave empty
+- skirting_make: Recommend brand if applicable
+- skirting_rate: Leave empty
 
-CEILING:
-- ceiling_finish: Primary ceiling material (e.g. "Regular Gypsum Board Ceiling", "MR Grade Gypsum Board Ceiling", "Lay in Metal Modular Non-Perforated Tiles")
-- ceiling_material_2: Secondary ceiling treatment (e.g. "Acrylic Emulsion Paint", "OBD Paint", "Stretch Fabric Ceiling")
-- ceiling_size: Ceiling panel size (e.g. "600 x 600", "600 x 1200")
-- ceiling_code: Code number if visible
-- ceiling_make: Manufacturer/brand if visible
-- ceiling_rate: Basic rate if visible
+CEILING (recommend based on room function):
+- ceiling_finish: Recommended primary ceiling material (e.g. "Regular Gypsum Board Ceiling" for offices, "MR Grade Gypsum Board Ceiling" for wet areas, "Lay in Metal Modular Non-Perforated Tiles" for utility)
+- ceiling_material_2: Recommended secondary treatment (e.g. "Acrylic Emulsion Paint", "OBD Paint")
+- ceiling_code: Leave empty
+- ceiling_make: Recommend brand if applicable
+- ceiling_rate: Leave empty
+- NOTE: Do NOT fill ceiling_size — leave it empty
 
 OTHER:
-- wall_finish: Wall finish material
-- paint_color: Paint type/color
-- dado: Dado specification
-- ceiling_height: Height in meters
-- area: Estimated area in sq ft
-- remark: Any remarks or notes
+- wall_finish: Recommended wall finish
+- paint_color: Recommended paint type
+- dado: Dado specification if applicable
+- ceiling_height: Height in meters if visible
+- area: Estimated area in sq ft if visible
+
+REMARK (IMPORTANT): For each room, explain WHY you recommended those specific materials. For example:
+- "Anti-skid vitrified tiles recommended for bathroom due to wet area safety requirements"
+- "Carpet flooring suggested for executive office for acoustic insulation and premium feel"
+- "MR Grade gypsum board for washroom ceiling due to high moisture environment"
+
+Also identify any rooms or spaces that you could NOT fully detect or are uncertain about.
 
 Return a JSON object:
 {
   "rooms": [array of room objects with above fields],
-  "detected_text": [array of text strings found],
+  "undetected_spaces": [array of strings describing rooms/areas that could not be clearly identified, e.g. "Partially visible room in top-right corner", "Unclear space behind staircase"],
+  "detected_text": [array of text strings found in the drawing],
   "drawing_type": "floor_plan" | "elevation" | "section" | "detail" | "unknown",
   "summary": "Brief description of what the drawing shows"
 }`;
@@ -81,7 +93,7 @@ Return a JSON object:
               },
               {
                 type: "text",
-                text: `Analyze this architectural drawing named "${fileName}". Extract all rooms with detailed flooring, skirting, and ceiling specifications. Return valid JSON only.`,
+                text: `Analyze this architectural drawing named "${fileName}". For each room detected, recommend appropriate finishing materials and explain your reasoning in the remark field. Do NOT fill any "size" fields. List any spaces you could not detect in "undetected_spaces". Return valid JSON only.`,
               },
             ],
           },
@@ -114,12 +126,21 @@ Return a JSON object:
       parsed = JSON.parse(jsonMatch[1].trim());
     } catch {
       console.error("Failed to parse AI response:", content);
-      parsed = { rooms: [], detected_text: [], drawing_type: "unknown", summary: "Could not parse analysis" };
+      parsed = { rooms: [], undetected_spaces: [], detected_text: [], drawing_type: "unknown", summary: "Could not parse analysis" };
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
+    // Build feedback string from undetected spaces
+    const undetectedSpaces = parsed.undetected_spaces || [];
+    const feedbackText = undetectedSpaces.length > 0
+      ? `AI could not detect the following spaces:\n${undetectedSpaces.map((s: string, i: number) => `${i + 1}. ${s}`).join("\n")}`
+      : "All visible rooms/spaces were successfully detected.";
+
+    // Save feedback to drawing record
+    await supabaseAdmin.from("drawings").update({ analysis_feedback: feedbackText }).eq("id", drawingId);
 
     if (parsed.rooms && parsed.rooms.length > 0) {
       const roomInserts = parsed.rooms.map((room: any) => ({
@@ -134,21 +155,21 @@ Return a JSON object:
         area_unit: "sq ft",
         dimensions: room.dimensions || {},
         floor_finish: room.floor_finish || "",
-        flooring_size: room.flooring_size || "",
+        flooring_size: "",
         flooring_finish: room.flooring_finish || "",
-        flooring_code: room.flooring_code || "",
+        flooring_code: "",
         flooring_make: room.flooring_make || "",
-        flooring_rate: room.flooring_rate || "",
+        flooring_rate: "",
         skirting: room.skirting || "",
-        skirting_code: room.skirting_code || "",
+        skirting_code: "",
         skirting_make: room.skirting_make || "",
-        skirting_rate: room.skirting_rate || "",
+        skirting_rate: "",
         ceiling_finish: room.ceiling_finish || "",
         ceiling_material_2: room.ceiling_material_2 || "",
-        ceiling_size: room.ceiling_size || "",
-        ceiling_code: room.ceiling_code || "",
+        ceiling_size: "",
+        ceiling_code: "",
         ceiling_make: room.ceiling_make || "",
-        ceiling_rate: room.ceiling_rate || "",
+        ceiling_rate: "",
         ceiling_height: room.ceiling_height || null,
         wall_finish: room.wall_finish || "",
         dado: room.dado || "",
@@ -168,6 +189,8 @@ Return a JSON object:
         drawing_type: parsed.drawing_type,
         summary: parsed.summary,
         detected_text: parsed.detected_text,
+        undetected_spaces: undetectedSpaces,
+        analysis_feedback: feedbackText,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

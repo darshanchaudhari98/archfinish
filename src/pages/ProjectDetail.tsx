@@ -138,6 +138,30 @@ export default function ProjectDetail() {
           )}
         </section>
 
+        {/* AI Feedback */}
+        {drawings.some((d) => d.analysis_feedback) && (
+          <section className="mt-10">
+            <h2 className="text-xl font-semibold font-heading text-foreground mb-4">AI Detection Feedback</h2>
+            <div className="space-y-3">
+              {drawings
+                .filter((d) => d.analysis_feedback)
+                .map((d) => (
+                  <div
+                    key={d.id}
+                    className={`rounded-xl border p-4 text-sm ${
+                      d.analysis_feedback?.includes("could not detect")
+                        ? "border-destructive/30 bg-destructive/5 text-destructive"
+                        : "border-primary/30 bg-primary/5 text-primary"
+                    }`}
+                  >
+                    <p className="font-medium mb-1">{d.file_name}</p>
+                    <p className="whitespace-pre-line text-foreground/80">{d.analysis_feedback}</p>
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
+
         {/* Schedule of Finishes */}
         {rooms.length > 0 && (
           <section className="mt-10">

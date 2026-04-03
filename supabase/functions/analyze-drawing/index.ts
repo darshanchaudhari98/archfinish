@@ -15,27 +15,48 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `You are an architectural drawing analyzer. Analyze the uploaded architectural floor plan image and extract ALL rooms visible in the drawing.
+    const systemPrompt = `You are an architectural drawing analyzer. Analyze the uploaded architectural floor plan and extract ALL rooms/spaces visible.
 
-For each room, provide:
-- name: The room label (e.g. "Living Room", "Kitchen", "Bedroom 1")
-- room_type: Category (bedroom, bathroom, kitchen, living, dining, hallway, utility, office, storage, balcony, garage, general)
-- area: Estimated area in square feet (numeric, estimate from proportions if dimensions given)
-- dimensions: Any dimension text you can read (as JSON object like {"length": "5m", "width": "4m"})
-- wall_finish: Suggested wall finish (e.g. "Painted plaster", "Ceramic tiles", "Wallpaper")
-- floor_finish: Suggested floor finish (e.g. "Ceramic tiles", "Hardwood", "Marble", "Carpet")
-- ceiling_finish: Suggested ceiling finish (e.g. "Painted plaster", "False ceiling", "Exposed concrete")
-- ceiling_height: Standard ceiling height in meters (typically 2.7-3.0)
-- skirting: Suggested skirting type (e.g. "Wood skirting 100mm", "Ceramic cove", "None")
-- dado: Suggested dado (e.g. "Ceramic dado 1200mm" for bathrooms, "None" for bedrooms)
-- paint_color: Suggested paint color (e.g. "White - RAL 9010", "Light Grey", "Cream")
-- notes: Any relevant notes
+For each room, provide these fields matching a professional Schedule of Finishes format:
 
-Also detect any text labels, dimensions, or annotations in the drawing.
+- name: The space description (e.g. "Electrical Room", "Public Lift Lobby")
+- floor_level: Which floor (e.g. "Basement 1", "Ground Floor", "First Floor")
+- space_tag: Room/space tag if visible
+- room_type: Category (bedroom, bathroom, kitchen, living, dining, hallway, utility, office, storage, balcony, garage, lobby, staircase, hub, ahu, general)
 
-Return a JSON object with this exact structure:
+FLOORING:
+- floor_finish: Flooring material (e.g. "Kota Stone", "Granite Stone", "Homogenous Vitrified Tiles", "Carpet Flooring", "LVT Flooring")
+- flooring_size: Tile/material size (e.g. "600 x 600", "800 x 1600")
+- flooring_finish: Surface finish (e.g. "AntiSkid", "Glossy", "Matte", "Honed", "Leather")
+- flooring_code: Material code number if visible
+- flooring_make: Manufacturer/brand if visible
+- flooring_rate: Basic rate if visible
+
+SKIRTING:
+- skirting: Skirting material (e.g. "Kota Stone", "Granite Stone", "Aluminium", "Coving")
+- skirting_code: Code number if visible
+- skirting_make: Manufacturer/brand if visible
+- skirting_rate: Basic rate if visible
+
+CEILING:
+- ceiling_finish: Primary ceiling material (e.g. "Regular Gypsum Board Ceiling", "MR Grade Gypsum Board Ceiling", "Lay in Metal Modular Non-Perforated Tiles")
+- ceiling_material_2: Secondary ceiling treatment (e.g. "Acrylic Emulsion Paint", "OBD Paint", "Stretch Fabric Ceiling")
+- ceiling_size: Ceiling panel size (e.g. "600 x 600", "600 x 1200")
+- ceiling_code: Code number if visible
+- ceiling_make: Manufacturer/brand if visible
+- ceiling_rate: Basic rate if visible
+
+OTHER:
+- wall_finish: Wall finish material
+- paint_color: Paint type/color
+- dado: Dado specification
+- ceiling_height: Height in meters
+- area: Estimated area in sq ft
+- remark: Any remarks or notes
+
+Return a JSON object:
 {
-  "rooms": [array of room objects],
+  "rooms": [array of room objects with above fields],
   "detected_text": [array of text strings found],
   "drawing_type": "floor_plan" | "elevation" | "section" | "detail" | "unknown",
   "summary": "Brief description of what the drawing shows"
@@ -60,7 +81,7 @@ Return a JSON object with this exact structure:
               },
               {
                 type: "text",
-                text: `Analyze this architectural drawing named "${fileName}". Extract all rooms and their finishes. Return valid JSON only.`,
+                text: `Analyze this architectural drawing named "${fileName}". Extract all rooms with detailed flooring, skirting, and ceiling specifications. Return valid JSON only.`,
               },
             ],
           },
@@ -71,17 +92,14 @@ Return a JSON object with this exact structure:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits in Settings." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       throw new Error(`AI analysis failed: ${response.status}`);
@@ -90,7 +108,6 @@ Return a JSON object with this exact structure:
     const aiResult = await response.json();
     const content = aiResult.choices?.[0]?.message?.content ?? "";
 
-    // Parse JSON from response (handle markdown code blocks)
     let parsed;
     try {
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
@@ -100,7 +117,6 @@ Return a JSON object with this exact structure:
       parsed = { rooms: [], detected_text: [], drawing_type: "unknown", summary: "Could not parse analysis" };
     }
 
-    // Store rooms in database
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
@@ -111,24 +127,38 @@ Return a JSON object with this exact structure:
         project_id: projectId,
         user_id: userId,
         name: room.name || "Unnamed Room",
+        floor_level: room.floor_level || "",
+        space_tag: room.space_tag || "",
         room_type: room.room_type || "general",
         area: room.area || null,
         area_unit: "sq ft",
         dimensions: room.dimensions || {},
-        wall_finish: room.wall_finish || "",
         floor_finish: room.floor_finish || "",
-        ceiling_finish: room.ceiling_finish || "",
-        ceiling_height: room.ceiling_height || null,
+        flooring_size: room.flooring_size || "",
+        flooring_finish: room.flooring_finish || "",
+        flooring_code: room.flooring_code || "",
+        flooring_make: room.flooring_make || "",
+        flooring_rate: room.flooring_rate || "",
         skirting: room.skirting || "",
+        skirting_code: room.skirting_code || "",
+        skirting_make: room.skirting_make || "",
+        skirting_rate: room.skirting_rate || "",
+        ceiling_finish: room.ceiling_finish || "",
+        ceiling_material_2: room.ceiling_material_2 || "",
+        ceiling_size: room.ceiling_size || "",
+        ceiling_code: room.ceiling_code || "",
+        ceiling_make: room.ceiling_make || "",
+        ceiling_rate: room.ceiling_rate || "",
+        ceiling_height: room.ceiling_height || null,
+        wall_finish: room.wall_finish || "",
         dado: room.dado || "",
         paint_color: room.paint_color || "",
+        remark: room.remark || "",
         notes: room.notes || "",
       }));
 
       const { error: roomError } = await supabaseAdmin.from("rooms").insert(roomInserts);
-      if (roomError) {
-        console.error("Room insert error:", roomError);
-      }
+      if (roomError) console.error("Room insert error:", roomError);
     }
 
     return new Response(

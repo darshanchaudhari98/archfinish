@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       drawings: {
         Row: {
+          analysis_feedback: string | null
           analysis_status: string
           created_at: string
           file_name: string
@@ -26,6 +27,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          analysis_feedback?: string | null
           analysis_status?: string
           created_at?: string
           file_name: string
@@ -36,6 +38,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          analysis_feedback?: string | null
           analysis_status?: string
           created_at?: string
           file_name?: string

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Building2, LogOut, Trash2, FileSpreadsheet, FileText } from "lucide-react";
+import { ArrowLeft, Building2, LogOut, Trash2, FileSpreadsheet, FileText, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DrawingUploader from "@/components/DrawingUploader";
 import DrawingCard from "@/components/DrawingCard";
@@ -141,23 +141,90 @@ export default function ProjectDetail() {
         {/* AI Feedback */}
         {drawings.some((d) => d.analysis_feedback) && (
           <section className="mt-10">
-            <h2 className="text-xl font-semibold font-heading text-foreground mb-4">AI Detection Feedback</h2>
-            <div className="space-y-3">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold font-heading text-foreground">
+                Verify With Original Design
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Review the AI's notes below and cross-check these areas against your original drawing.
+              </p>
+            </div>
+            <div className="space-y-4">
               {drawings
                 .filter((d) => d.analysis_feedback)
-                .map((d) => (
-                  <div
-                    key={d.id}
-                    className={`rounded-xl border p-4 text-sm ${
-                      d.analysis_feedback?.includes("could not detect")
-                        ? "border-destructive/30 bg-destructive/5 text-destructive"
-                        : "border-primary/30 bg-primary/5 text-primary"
-                    }`}
-                  >
-                    <p className="font-medium mb-1">{d.file_name}</p>
-                    <p className="whitespace-pre-line text-foreground/80">{d.analysis_feedback}</p>
-                  </div>
-                ))}
+                .map((d) => {
+                  const feedback = d.analysis_feedback ?? "";
+                  const isWarning = /could not detect|unable to|not detected|missing|unclear|undetected/i.test(feedback);
+                  const isError = /error|failed/i.test(feedback);
+
+                  // Parse feedback into structured items (split by newlines, bullets, or semicolons)
+                  const items = feedback
+                    .split(/\n+|(?:^|\s)[-•*]\s+|;\s*/g)
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0);
+
+                  const tone = isError
+                    ? {
+                        border: "border-destructive/30",
+                        bg: "bg-destructive/5",
+                        iconBg: "bg-destructive/10",
+                        iconColor: "text-destructive",
+                        label: "Analysis Error",
+                        Icon: AlertTriangle,
+                      }
+                    : isWarning
+                      ? {
+                          border: "border-warning/30",
+                          bg: "bg-warning/5",
+                          iconBg: "bg-warning/10",
+                          iconColor: "text-warning",
+                          label: "Needs Verification",
+                          Icon: AlertTriangle,
+                        }
+                      : {
+                          border: "border-primary/30",
+                          bg: "bg-primary/5",
+                          iconBg: "bg-primary/10",
+                          iconColor: "text-primary",
+                          label: "AI Notes",
+                          Icon: Info,
+                        };
+
+                  const ToneIcon = tone.Icon;
+
+                  return (
+                    <div
+                      key={d.id}
+                      className={`rounded-xl border ${tone.border} ${tone.bg} overflow-hidden`}
+                    >
+                      <div className="flex items-start gap-3 p-4 border-b border-border/50 bg-card/40">
+                        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${tone.iconBg} shrink-0`}>
+                          <ToneIcon className={`h-4 w-4 ${tone.iconColor}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{d.file_name}</p>
+                          <p className={`text-xs font-medium ${tone.iconColor} mt-0.5`}>{tone.label}</p>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        {items.length > 1 ? (
+                          <ul className="space-y-2">
+                            {items.map((item, idx) => (
+                              <li key={idx} className="flex items-start gap-2 text-sm text-foreground/85">
+                                <CheckCircle2 className={`h-4 w-4 mt-0.5 shrink-0 ${tone.iconColor}`} />
+                                <span className="leading-relaxed">{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">
+                            {feedback}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </section>
         )}

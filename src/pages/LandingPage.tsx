@@ -120,7 +120,7 @@ const testimonials = [
   {
     name: "Sarah Mitchell",
     role: "Principal Architect, StudioArch",
-    quote: "ArchFinish cut our schedule of finishes preparation from hours to minutes. The AI detection is remarkably accurate.",
+    quote: "ArchEasy cut our schedule of finishes preparation from hours to minutes. The AI detection is remarkably accurate.",
     rating: 5,
   },
   {
@@ -152,7 +152,7 @@ export default function LandingPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
               <Building2 className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold font-heading text-foreground">ArchFinish</span>
+            <span className="text-lg font-bold font-heading text-foreground">ArchEasy</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -325,7 +325,7 @@ export default function LandingPage() {
               Everything You Need to Automate Finishes
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              From intelligent room detection to professional exports, ArchFinish handles the entire workflow.
+              From intelligent room detection to professional exports, ArchEasy handles the entire workflow.
             </p>
           </motion.div>
 
@@ -497,10 +497,10 @@ export default function LandingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
               <Building2 className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-sm font-bold font-heading text-foreground">ArchFinish</span>
+            <span className="text-sm font-bold font-heading text-foreground">ArchEasy</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} ArchFinish. AI-powered architectural analysis.
+            © {new Date().getFullYear()} ArchEasy. AI-powered architectural analysis.
           </p>
         </div>
       </footer>

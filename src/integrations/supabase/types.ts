@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           file_name: string
           file_size: number | null
+          floor_id: string | null
           id: string
           project_id: string
           storage_path: string
@@ -32,6 +33,7 @@ export type Database = {
           created_at?: string
           file_name: string
           file_size?: number | null
+          floor_id?: string | null
           id?: string
           project_id: string
           storage_path: string
@@ -43,6 +45,7 @@ export type Database = {
           created_at?: string
           file_name?: string
           file_size?: number | null
+          floor_id?: string | null
           id?: string
           project_id?: string
           storage_path?: string
@@ -50,7 +53,55 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "drawings_floor_id_fkey"
+            columns: ["floor_id"]
+            isOneToOne: false
+            referencedRelation: "floors"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "drawings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      floors: {
+        Row: {
+          created_at: string
+          id: string
+          level_order: number
+          name: string
+          notes: string | null
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level_order?: number
+          name?: string
+          notes?: string | null
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level_order?: number
+          name?: string
+          notes?: string | null
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floors_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -112,6 +163,88 @@ export type Database = {
         }
         Relationships: []
       }
+      room_recommendations: {
+        Row: {
+          cost_note: string | null
+          created_at: string
+          detected_finish: string | null
+          durability: string | null
+          floor_id: string | null
+          id: string
+          maintenance: string | null
+          moisture_slip: string | null
+          project_id: string
+          rationale: string | null
+          recommended_finish: string
+          room_id: string
+          status: string
+          surface: string
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_note?: string | null
+          created_at?: string
+          detected_finish?: string | null
+          durability?: string | null
+          floor_id?: string | null
+          id?: string
+          maintenance?: string | null
+          moisture_slip?: string | null
+          project_id: string
+          rationale?: string | null
+          recommended_finish?: string
+          room_id: string
+          status?: string
+          surface?: string
+          tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_note?: string | null
+          created_at?: string
+          detected_finish?: string | null
+          durability?: string | null
+          floor_id?: string | null
+          id?: string
+          maintenance?: string | null
+          moisture_slip?: string | null
+          project_id?: string
+          rationale?: string | null
+          recommended_finish?: string
+          room_id?: string
+          status?: string
+          surface?: string
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_recommendations_floor_id_fkey"
+            columns: ["floor_id"]
+            isOneToOne: false
+            referencedRelation: "floors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_recommendations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_recommendations_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           area: number | null
@@ -128,6 +261,7 @@ export type Database = {
           dimensions: Json | null
           drawing_id: string
           floor_finish: string | null
+          floor_id: string | null
           floor_level: string | null
           flooring_code: string | null
           flooring_finish: string | null
@@ -165,6 +299,7 @@ export type Database = {
           dimensions?: Json | null
           drawing_id: string
           floor_finish?: string | null
+          floor_id?: string | null
           floor_level?: string | null
           flooring_code?: string | null
           flooring_finish?: string | null
@@ -202,6 +337,7 @@ export type Database = {
           dimensions?: Json | null
           drawing_id?: string
           floor_finish?: string | null
+          floor_id?: string | null
           floor_level?: string | null
           flooring_code?: string | null
           flooring_finish?: string | null
@@ -230,6 +366,13 @@ export type Database = {
             columns: ["drawing_id"]
             isOneToOne: false
             referencedRelation: "drawings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rooms_floor_id_fkey"
+            columns: ["floor_id"]
+            isOneToOne: false
+            referencedRelation: "floors"
             referencedColumns: ["id"]
           },
           {
@@ -265,12 +408,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -294,11 +437,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -319,11 +462,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -344,11 +487,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -361,11 +504,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

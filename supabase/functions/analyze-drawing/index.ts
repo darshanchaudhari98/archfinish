@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { imageBase64, drawingId, projectId, userId, fileName, mimeType } = await req.json();
+    const { imageBase64, drawingId, projectId, userId, fileName, mimeType, floorId } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
@@ -167,6 +167,7 @@ Return this exact JSON structure:
       const roomInserts = parsed.rooms.map((room: any) => ({
         drawing_id: drawingId,
         project_id: projectId,
+        floor_id: floorId ?? null,
         user_id: userId,
         name: room.name || "Unnamed Room",
         floor_level: room.floor_level || "",

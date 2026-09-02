@@ -9,9 +9,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
   projectId: string;
+  floorId?: string | null;
 }
 
-export default function DrawingUploader({ projectId }: Props) {
+export default function DrawingUploader({ projectId, floorId = null }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -39,6 +40,7 @@ export default function DrawingUploader({ projectId }: Props) {
           file_name: file.name,
           storage_path: storagePath,
           file_size: file.size,
+          floor_id: floorId,
           analysis_status: "analyzing",
         })
         .select()
@@ -60,6 +62,7 @@ export default function DrawingUploader({ projectId }: Props) {
               userId: user!.id,
               fileName: file.name,
               mimeType: file.type,
+              floorId,
             },
           }
         );

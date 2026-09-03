@@ -49,6 +49,7 @@ interface Room {
 interface Props {
   rooms: Room[];
   projectId: string;
+  highlightedRoomId?: string | null;
 }
 
 const columnGroups = [

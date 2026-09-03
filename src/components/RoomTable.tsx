@@ -100,7 +100,7 @@ const columnGroups = [
 
 const allColumns = columnGroups.flatMap((g) => g.columns);
 
-export default function RoomTable({ rooms, projectId }: Props) {
+export default function RoomTable({ rooms, projectId, highlightedRoomId = null }: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -184,7 +184,12 @@ export default function RoomTable({ rooms, projectId }: Props) {
           </TableHeader>
           <TableBody>
             {rooms.map((room, idx) => (
-              <TableRow key={room.id} className="hover:bg-muted/30">
+              <TableRow
+                key={room.id}
+                className={`hover:bg-muted/30 ${
+                  highlightedRoomId === room.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""
+                }`}
+              >
                 <TableCell className="text-xs text-muted-foreground font-medium">
                   {idx + 1}
                 </TableCell>
